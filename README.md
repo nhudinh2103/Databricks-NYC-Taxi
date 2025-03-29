@@ -366,7 +366,7 @@ We tracked the costs associated with running our data pipeline across both cloud
 | **GCP** | **Storage** | Daily Storage | GCS + BigQuery | **$0.69** ($0.59 + $0.1) /day |
 | | **Compute** | Convert CSV to Parquet | VM Instance | **$2.60/run** |
 | | | | Databricks Cluster Spark Computing | **$14.22/run** |
-| | | Transform Data (Option 1) | BigQuery | **$7.84/run** |
+| | | Transform Data (Option 1) | BigQuery | **$7.84/run** <br>(~2737 slots) |
 | | | Transform Data (Option 2) | Databricks SQL Warehouse | **$2.70/run** |
 | | **TOTAL (with BigQuery)** | | | **$24.66/run** + $0.69/day |
 | | **TOTAL (with Databricks SQL)** | | | **$19.52/run** + $0.69/day |
