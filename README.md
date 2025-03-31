@@ -1,4 +1,4 @@
-# NYC Taxi Data Analytics: Multi-Platform Comparison (Databricks, BigQuery, Snowflake)
+# NYC Taxi Data Analytics: Multi-Platform Comparison (Databricks, BigQuery, Snowflake) with Delta Lake & Iceberg
 
 ## Table of Contents
 - [Overview](#overview)
@@ -56,6 +56,10 @@
   - [Best Practices](#best-practices)
   - [Schema Management](#schema-management)
   - [Storage Optimization](#storage-optimization)
+- [Iceberg](#iceberg)
+  - [Azure Implementation](#azure-implementation)
+    - [Creating Iceberg Tables](#creating-iceberg-tables)
+    - [Reading Iceberg Tables](#reading-iceberg-tables)
 - [Future Enhancements](#future-enhancements)
 
 ## Overview
@@ -79,6 +83,10 @@ Extended data processing from the original 2016-2017 range to include all NYC ta
 ### 🔍 Optimize Transformation Query for Big Dataset (Yellow Taxi)
 
 Added query optimization techniques (by using BROADCAST join hint and UNION ALL query approach) for better performance and ad-hoc queries on the large Yellow Taxi dataset (1.37B records)
+
+### 📦 Added Support Iceberg Table Formats
+
+Extended the project with comprehensive guides for Iceberg table formats. We provide detailed instructions for creating and reading Iceberg tables in Azure Databricks environments.
 
 ## Architecture
 
@@ -751,6 +759,107 @@ Choose between these options based on your specific needs and requirements. Delt
   - Leverage Delta Lake's version restore mechanism to retrieve historical data when needed
   
   This approach optimizes storage costs while maintaining the ability to access historical data through Delta Lake's time travel capabilities.
+
+## ICEBERG
+
+Iceberg is an open table format designed for large analytical datasets. This section covers how to create and read Iceberg tables in Databricks.
+
+### Azure Implementation
+
+The following guide focuses on implementing Iceberg tables in Azure Databricks environments.
+
+#### Creating Iceberg Tables
+
+#### Prerequisites
+
+Before creating Iceberg tables, set column mapping mode to 'name' for your Delta Lake table:
+
+```sql
+ALTER TABLE <delta_lake_schema>.<delta_lake_table> 
+SET TBLPROPERTIES ('delta.columnMapping.mode' = 'name');
+```
+
+#### Method 1: Convert Existing Delta Table
+
+```sql
+-- Disable deletion vectors
+ALTER TABLE <delta_lake_schema>.<delta_lake_table> 
+SET TBLPROPERTIES ('delta.enableDeletionVectors' = 'false');
+
+-- Purge deleted data
+REORG TABLE <delta_lake_schema>.<delta_lake_table> APPLY (PURGE);
+
+-- Enable Iceberg compatibility
+ALTER TABLE <delta_lake_schema>.<delta_lake_table> 
+SET TBLPROPERTIES (
+  'delta.columnMapping.mode' = 'name', 
+  'delta.enableIcebergCompatV2' = 'true',
+  'delta.universalFormat.enabledFormats' = 'iceberg'
+);
+```
+
+#### Method 2: Create New Table via Deep Clone
+
+Use this method if you prefer to keep the original Delta table unchanged:
+
+```sql
+CREATE TABLE <unity_catalog_name>.<delta_lake_schema>.<iceberg_table> 
+DEEP CLONE <unity_catalog_name>.<delta_lake_schema>.<delta_lake_table>
+TBLPROPERTIES(
+  'delta.enableDeletionVectors' = 'false',
+  'delta.enableIcebergCompatV2' = 'true',
+  'delta.universalFormat.enabledFormats' = 'iceberg'
+)
+LOCATION "abfss://<container_name>@<storage_name>.dfs.core.windows.net/<table_data_path>";
+```
+
+### Reading Iceberg Tables
+
+#### Known Issues
+
+Databricks has compatibility issues when reading Iceberg tables with Spark and Unity Catalog:
+- "iceberg is not a valid Spark SQL Data Source"
+- "Multiple sources found for iceberg"
+
+> **Note:** While older Databricks runtime (12.2) can run without Unity Catalog, this is not recommended. The preferred approach is using the [Iceberg API for Spark](https://docs.databricks.com/aws/en/external-access/iceberg#read-iceberg-tables-with-apache-spark).
+
+#### Local Spark Setup Workaround
+
+1. **Install Required Components**
+   - JDK, Scala 2.12, and Apache Spark 3.5.2 with Hadoop
+   - Follow [this guide](https://phoenixnap.com/kb/install-spark-on-ubuntu)
+   - Match Databricks Runtime 16.2 compatibility
+
+2. **Download Iceberg Libraries**
+   - iceberg-azure-bundle-1.8.1.jar
+   - iceberg-spark-runtime-3.5_2.12-1.8.1.jar
+
+3. **Launch Spark with Iceberg Support**
+   ```bash
+   spark-shell --jars=<path-to>/iceberg-azure-bundle-1.8.1.jar,<path-to>/iceberg-spark-runtime-3.5_2.12-1.8.1.jar
+   ```
+
+4. **Configure and Read Iceberg Tables**
+   ```scala
+   // Create SparkSession with Iceberg configuration
+   import org.apache.spark.sql.SparkSession
+   val spark_test = SparkSession.builder()
+     .appName("IcebergRead")
+     .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
+     .config("spark.sql.catalog.<catalog_name>", "org.apache.iceberg.spark.SparkCatalog")
+     .config("spark.sql.catalog.<catalog_name>.type", "rest")
+     .config("spark.sql.catalog.<catalog_name>.token", "<databricks_token>")
+     .config("spark.sql.catalog.<catalog_name>.uri", "https://<workspace_url>/api/2.1/unity-catalog/iceberg")
+     .config("spark.sql.catalog.<catalog_name>.warehouse", "<catalog_name>")
+     .config("spark.sql.defaultCatalog", "<catalog_name>")
+     .getOrCreate()
+
+   // Read from Iceberg table
+   val df = spark_test.read.format("iceberg").load("<catalog_name>.<schema_name>.<iceberg_table_name>")
+   df.show()
+   ```
+
+Replace placeholders with your actual values for catalog name, token, workspace URL, schema, and table names.
 
 ## Future Enhancements
 
