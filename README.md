@@ -818,8 +818,41 @@ LOCATION "abfss://<container_name>@<storage_name>.dfs.core.windows.net/<table_da
 #### Known Issues
 
 Databricks has compatibility issues when reading Iceberg tables with Spark and Unity Catalog:
-- "iceberg is not a valid Spark SQL Data Source"
-- "Multiple sources found for iceberg"
+
+```
+org.apache.spark.sql.AnalysisException: iceberg is not a valid Spark SQL Data Source.
+  at org.apache.spark.sql.errors.QueryCompilationErrors$.invalidDataSourceError(QueryCompilationErrors.scala:538)
+  at org.apache.spark.sql.execution.datasources.DataSource$.lookupDataSource(DataSource.scala:692)
+  at org.apache.spark.sql.execution.datasources.DataSource$.lookupDataSourceV2(DataSource.scala:746)
+  at org.apache.spark.sql.DataFrameReader.load(DataFrameReader.scala:265)
+  at org.apache.spark.sql.DataFrameReader.load(DataFrameReader.scala:226)
+  ... 43 more
+```
+
+```
+org.apache.spark.sql.AnalysisException: Multiple sources found for iceberg (com.databricks.sql.transaction.tahoe.uniform.sources.IcebergBrowseOnlyDataSource, org.apache.iceberg.spark.source.IcebergSource), please specify the fully qualified class name.
+  at org.apache.spark.sql.execution.datasources.DataSource$.$anonfun$lookupDataSource$5(DataSource.scala:703)
+  at scala.collection.Iterator$$anon$9.next(Iterator.scala:577)
+  at scala.collection.Iterator$$anon$9.next(Iterator.scala:577)
+  at scala.collection.Iterator.foreach(Iterator.scala:943)
+  at scala.collection.Iterator.foreach$(Iterator.scala:943)
+  at scala.collection.Iterator$$anon$9.foreach(Iterator.scala:577)
+  at scala.collection.generic.Growable.$plus$plus$eq(Growable.scala:62)
+  at scala.collection.generic.Growable.$plus$plus$eq$(Growable.scala:53)
+  at scala.collection.mutable.ListBuffer.$plus$plus$eq(ListBuffer.scala:192)
+  at scala.collection.mutable.ListBuffer.$plus$plus$eq(ListBuffer.scala:50)
+  at scala.collection.TraversableOnce.to(TraversableOnce.scala:315)
+  at scala.collection.TraversableOnce.to$(TraversableOnce.scala:313)
+  at scala.collection.AbstractIterator.to(Iterator.scala:1429)
+  at scala.collection.TraversableOnce.toList(TraversableOnce.scala:299)
+  at scala.collection.TraversableOnce.toList$(TraversableOnce.scala:299)
+  at scala.collection.AbstractIterator.toList(Iterator.scala:1429)
+  at org.apache.spark.sql.execution.datasources.DataSource$.lookupDataSource(DataSource.scala:703)
+  at org.apache.spark.sql.execution.datasources.DataSource$.lookupDataSourceV2(DataSource.scala:746)
+  at org.apache.spark.sql.DataFrameReader.load(DataFrameReader.scala:265)
+  at org.apache.spark.sql.DataFrameReader.load(DataFrameReader.scala:226)
+  ... 43 more
+```
 
 > **Note:** While older Databricks runtime (12.2) can run without Unity Catalog, this is not recommended. The preferred approach is using the [Iceberg API for Spark](https://docs.databricks.com/aws/en/external-access/iceberg#read-iceberg-tables-with-apache-spark).
 
