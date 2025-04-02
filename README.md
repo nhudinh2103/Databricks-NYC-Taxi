@@ -94,7 +94,7 @@ Extended the project with comprehensive guides for Iceberg table formats. We pro
 
 ### High-Level Architecture
 
-![Overall Architecture](images/overall-architecture.png)
+![Overall Architecture](images/overall-architecture.png!)
 
 The architecture consists of several key components that are implemented differently across cloud providers:
 
