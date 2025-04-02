@@ -1,4 +1,4 @@
-# NYC Taxi Data Analytics: Multi-Platform Comparison (Databricks, BigQuery, Snowflake) with Delta Lake & Iceberg
+# NYC Taxi Data Analytics: Multi-Platform Comparison (Databricks, BigQuery, Snowflake) with Delta Lake & Iceberg on Azure, GCP, and AWS
 
 ## Table of Contents
 - [Overview](#overview)
@@ -64,7 +64,7 @@
 
 ## Overview
 
-An experimental data engineering project for processing and analyzing NYC Taxi data (1.4B+ records) across multiple platforms (Databricks, BigQuery, Snowflake) and cloud vendors (Azure, GCP) to compare performance and cost. This project extends the [Azure-Databricks-NYC-Taxi-Workshop](https://github.com/microsoft/Azure-Databricks-NYC-Taxi-Workshop) with significant performance improvements by replacing Spark transformations with cloud-native SQL data warehousing solutions, expanding the data range (2009–2017), and optimizing queries using BROADCAST hints.
+An experimental data engineering project for processing and analyzing NYC Taxi data (1.4B+ records) across multiple platforms (Databricks, BigQuery, Snowflake) and cloud vendors (Azure, GCP, AWS) to compare performance and cost. This project extends the [Azure-Databricks-NYC-Taxi-Workshop](https://github.com/microsoft/Azure-Databricks-NYC-Taxi-Workshop) with significant performance improvements by replacing Spark transformations with cloud-native SQL data warehousing solutions, expanding the data range (2009–2017), and optimizing queries using BROADCAST hints.
 
 This multi-platform approach demonstrates cloud-agnostic data engineering patterns while leveraging each platform's native services for storage, data warehousing, and secret management. The comprehensive cost and performance analysis helps data engineers make informed decisions when selecting platforms for large-scale data processing workloads.
 
@@ -102,6 +102,7 @@ The architecture consists of several key components that are implemented differe
 Copies data from NYC source into cloud storage (stored as CSV)
 - Azure: **Azure Data Factory**
 - GCP: **Storage Transfer Service**
+- AWS: Instead of using data transfer (which has complex setup) or copying from GCP (which is too slow), data is copied from Azure to AWS using [Azure Blob to Amazon S3 solution](https://aws.amazon.com/blogs/modernizing-with-aws/azure-blob-to-amazon-s3/). Note that you'll need to tweak the code slightly and set up necessary permissions in Azure for this solution to work properly.
 
 #### **Data Ingestion (Apache Spark)**  
 Apache Spark on Databricks processes raw CSV data into optimized formats for analytics:
@@ -114,16 +115,19 @@ Apache Spark on Databricks processes raw CSV data into optimized formats for ana
 Stores sensitive information like secrets and credentials for connecting to Databricks and cloud services
 - Azure: **Azure Key Vault**
 - GCP: **Databricks secrets**
+- AWS: **AWS Secret Manager**
 
 #### **Storage**  
 Serves as the primary storage layer where we implement the medallion architecture (Bronze, Silver, Gold layers)
 - Azure: **Azure Data Lake Storage Gen2**
 - GCP: **Google Cloud Storage (GCS)**
+- AWS: **Amazon S3**
 
 #### **Cloud Data Warehouse**  
 Provides the environment for data transformation and querying for reporting and analytics
 - Azure: **Azure Synapse**
 - GCP: **Google BigQuery**
+- AWS: **Amazon Redshift**
 
 ### Ingestion Flow
 #### Azure
